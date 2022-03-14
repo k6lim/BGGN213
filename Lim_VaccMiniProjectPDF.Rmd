@@ -1,0 +1,191 @@
+---
+title: "Test"
+author: "Christina Lim"
+date: "3/10/2022"
+output:
+  pdf_document: default
+  html_document: default
+---
+```{r}
+library(tinytex)
+```
+
+
+```{r}
+vax <- read.csv("covid19vaccinesbyzipcode_test.csv")
+head(vax,3)
+```
+
+```{r}
+head(vax$persons_fully_vaccinated)
+```
+```{r}
+nrow(vax)
+```
+#What is the latest date in this dataset?
+```{r}
+vax$as_of_date[nrow(vax)]
+```
+#install.packages("lubridate)
+```{r}
+library(lubridate)
+```
+```{r}
+today()
+```
+```{r}
+vax$as_of_date[1]
+```
+
+```{r}
+vax$as_of_date <- ymd(vax$as_of_date)
+today() - vax$as_of_date[1]
+```
+```{r}
+today() - vax$as_of_date[nrow(vax)]
+```
+```{r}
+vax$as_of_date[nrow(vax)] - vax$as_of_date[1]
+```
+```{r}
+length(unique((vax$zip_code_tabulation_area)))
+```
+```{r}
+time_length(today()-ymd("1996-08-29"),"years")
+```
+#Convert(overwrite) the `as of date` column by the output of `ymd()` function
+```{r}
+#specify that we are using year-month-date format. 
+
+vax$as_of_date <- ymd(vax$as_of_date)
+```
+
+#Now we can take the last date and subtract the first date recorded to find the time spent in this dataset
+```{r}
+today() - vax$as_of_date[1]
+```
+
+#Now we focus on San Diego
+
+```{r}
+sd <- vax[vax$county == "San Diego",]
+```
+#We need dplyr
+
+#install.packages("tidyverse", dependencies = TRUE)
+```{r}
+library(tidyverse)
+```
+Using the filter dplyr way 
+```{r}
+sd <- filter (vax, county == "San Diego")
+head(sd,3)
+```
+#How many unique zipcodes in San Diego county?
+
+```{r}
+length(unique((vax$zip_code_tabulation_area)))
+```
+
+#Or another way:
+```{r}
+#install.packages("zipcodeR")
+library(zipcodeR)
+```
+```{r}
+geocode_zip('92037')
+```
+```{r}
+x <- c(10,9,8,20)
+
+inds <- order (x, decreasing = TRUE)
+x[inds]
+```
+
+```{r}
+inds <- order(sd$age12_plus_population, decreasing = TRUE)
+sd[inds[1],]
+```
+#Or another way:
+
+```{r}
+ind <- which.max(sd$age12_plus_population)
+sd$zip_code_tabulation_area[ind]
+```
+
+#Using dplyr:
+
+```{r}
+arrange(sd, -age12_plus_population) %>%
+select(zip_code_tabulation_area)
+```
+```{r}
+library(ggplot2)
+```
+
+```{r}
+lj <- filter(vax, zip_code_tabulation_area == "92037")
+ggplot(lj) + 
+  aes(x = as_of_date, 
+      y = percent_of_population_fully_vaccinated) + 
+  geom_point() + geom_line(group=1) + ylim(c(0,1)) +
+  labs(x= "Date", y = "Percent Vaccinated")
+```
+```{r}
+lj <- filter(sd, as_of_date == "2022-03-01")
+sd.ave <- mean(lj$percent_of_population_fully_vaccinated, na.rm = TRUE)
+sd.ave
+```
+
+#Or 
+
+```{r}
+sd %>% filter (as_of_date == "2022-03-01") %>%
+  select(percent_of_population_fully_vaccinated) %>%
+  colMeans(na.rm=T)
+```
+
+#histogram:
+
+```{r}
+sd.today <- filter(sd, as_of_date == "2022-02-22")
+summary(sd.today$percent_of_population_fully_vaccinated)
+```
+```{r}
+hist(sd.today$percent_of_population_fully_vaccinated)
+```
+#OR
+
+```{r}
+ggplot(sd.today) + 
+  aes(percent_of_population_fully_vaccinated) + 
+  geom_histogram() + 
+  geom_rug()
+```
+#What is the age 5+ population of 92037 area?
+
+```{r}
+ucsd <- filter(sd, zip_code_tabulation_area == "92037")
+ucsd[1,]$age5_plus_population
+```
+
+```{r}
+filter(vax, zip_code_tabulation_area =="92037") %>%
+         ggplot() + 
+         aes (as_of_date, percent_of_population_fully_vaccinated)+
+         geom_point()+
+         geom_line()+
+         geom_hline(yintercept = sd.ave, col = "red", linetype=2)
+```
+We want a time-course plot of all zipcode areas with a population as large as CA 92037
+```{r}
+vax.36.all <- filter(vax, age5_plus_population > 36144)
+
+ggplot(vax.36.all) +
+  aes(as_of_date, 
+      percent_of_population_fully_vaccinated,
+      group = zip_code_tabulation_area) +
+  geom_line(col = "blue")
+
+```
+
